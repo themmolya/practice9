@@ -1,7 +1,6 @@
 import pygame
 import sys
 import datetime
-import math
 
 pygame.init()
 
@@ -11,12 +10,29 @@ pygame.display.set_caption("Mickey Clock")
 
 clock = pygame.time.Clock()
 
-center = (WIDTH // 2, HEIGHT // 2)
+bg = pygame.image.load("images/mickeyclock.jpeg")
+bg = pygame.transform.scale(bg, (500, 500))
 
-def draw_hand(length, angle, color):
-    x = center[0] + length * math.sin(math.radians(angle))
-    y = center[1] - length * math.cos(math.radians(angle))
-    pygame.draw.line(screen, color, center, (x, y), 5)
+left_hand = pygame.image.load("images/left_hand.png").convert_alpha()
+right_hand = pygame.image.load("images/right_hand.png").convert_alpha()
+
+# орташа размер
+left_hand = pygame.transform.scale(left_hand, (75, 160))
+right_hand = pygame.transform.scale(right_hand, (65, 130))
+
+center = pygame.math.Vector2(WIDTH // 2, HEIGHT // 2)
+
+def blit_rotate(surface, image, pos, originPos, angle):
+    image_rect = image.get_rect(topleft=(pos[0] - originPos[0], pos[1] - originPos[1]))
+    offset = pygame.math.Vector2(pos) - image_rect.center
+
+    rotated_offset = offset.rotate(angle)  # 🔥 МІНЕ ОСЫ ЖЕР ДҰРЫС
+    rotated_center = (pos[0] - rotated_offset.x, pos[1] - rotated_offset.y)
+
+    rotated_image = pygame.transform.rotate(image, -angle)  # 🔥 ЖӘНЕ ОСЫ
+    rotated_rect = rotated_image.get_rect(center=rotated_center)
+
+    surface.blit(rotated_image, rotated_rect)
 
 while True:
     for event in pygame.event.get():
@@ -24,31 +40,31 @@ while True:
             pygame.quit()
             sys.exit()
 
-    screen.fill((255, 255, 255))
+    screen.blit(bg, (0, 0))
 
     now = datetime.datetime.now()
     sec = now.second
     minute = now.minute
 
+    # 🔥 ДҰРЫС БАҒЫТ
     sec_angle = sec * 6
     min_angle = minute * 6
 
-    pygame.draw.circle(screen, (0, 0, 0), center, 200, 2)
+    blit_rotate(
+        screen,
+        left_hand,
+        center,
+        (left_hand.get_width() // 2, left_hand.get_height()),
+        sec_angle
+    )
 
-    # 🔥 САНДАР
-    font = pygame.font.SysFont(None, 30)
-
-    for i in range(1, 13):
-        angle = i * 30
-        x = center[0] + 170 * math.sin(math.radians(angle))
-        y = center[1] - 170 * math.cos(math.radians(angle))
-
-        text = font.render(str(i), True, (0, 0, 0))
-        rect = text.get_rect(center=(x, y))
-        screen.blit(text, rect)
-
-    draw_hand(150, sec_angle, (255, 0, 0))
-    draw_hand(100, min_angle, (0, 0, 255))
+    blit_rotate(
+        screen,
+        right_hand,
+        center,
+        (right_hand.get_width() // 2, right_hand.get_height()),
+        min_angle
+    )
 
     pygame.display.flip()
-    clock.tick(1)
+    clock.tick(60)
